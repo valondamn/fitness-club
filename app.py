@@ -3,6 +3,7 @@ from tkinter import messagebox
 import sqlite3
 import pandas as pd
 from database import init_db  # Импортируем функцию инициализации БД
+import numpy as np
 
 class FitnessApp:
     """Графический интерфейс для системы фитнес-клуба."""
@@ -21,6 +22,8 @@ class FitnessApp:
         tk.Button(root, text="Зафиксировать посещение", command=self.add_visit_window).pack(pady=5)
         tk.Button(root, text="Поиск клиентов", command=self.search_clients_window).pack(pady=5)
         tk.Button(root, text="Генерировать отчеты", command=self.generate_reports).pack(pady=5)
+        tk.Button(root, text="Показать статистику", command=self.show_statistics).pack(pady=5)
+
     
     def generate_reports(self):
         """Генерация отчетов по посещаемости и популярным тренировкам в CSV."""
@@ -32,6 +35,26 @@ class FitnessApp:
         df_visits.to_csv("visits_report.csv", index=False)
         df_sessions.to_csv("sessions_report.csv", index=False)
         messagebox.showinfo("Успех", "Отчеты сохранены как CSV!")
+
+    def show_statistics(self):
+        """Вывод статистики по посещаемости, популярным тренерам и возрасту клиентов."""
+        conn = sqlite3.connect("fitness_club.db")
+        df_visits = pd.read_sql_query("SELECT * FROM visits", conn)
+        df_sessions = pd.read_sql_query("SELECT trainer_id FROM sessions", conn)
+        df_clients = pd.read_sql_query("SELECT age FROM clients", conn)
+        conn.close()
+
+        avg_visits = np.mean(df_visits["client_id"].value_counts()) if not df_visits.empty else 0
+        top_trainers = df_sessions["trainer_id"].value_counts().head(3).to_dict()
+        avg_age = np.mean(df_clients["age"]) if not df_clients.empty else 0
+
+        stats_message = (
+            f"Средняя посещаемость: {avg_visits:.2f}\n"
+            f"Топ-3 популярных тренеров: {top_trainers}\n"
+            f"Средний возраст клиентов: {avg_age:.2f}"
+        )
+
+        messagebox.showinfo("Статистика клуба", stats_message)
 
     def add_client_window(self):
         """Окно для добавления клиента."""
